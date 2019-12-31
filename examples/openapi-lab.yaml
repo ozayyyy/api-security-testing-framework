@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: API Security Testing Lab
+  version: 0.1.0
+servers:
+  - url: http://127.0.0.1:8000
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+paths:
+  /vuln/objects/{id}:
+    get:
+      operationId: getObject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Object
+        '403':
+          description: Forbidden
+  /vuln/admin/users:
+    get:
+      operationId: listUsersAdmin
+      responses:
+        '200':
+          description: Admin user list
+        '403':
+          description: Forbidden
+  /vuln/me:
+    get:
+      operationId: getMe
+      responses:
+        '200':
+          description: Current user
+        '401':
+          description: Unauthorised
+  /vuln/users/me:
+    get:
+      operationId: getMyProfile
+      responses:
+        '200':
+          description: Profile
+    patch:
+      operationId: updateMyProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Updated profile
+  /vuln/users/{user_id}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User
+  /vuln/rate-test:
+    get:
+      operationId: rateTest
+      responses:
+        '200':
+          description: OK
+        '429':
+          description: Rate limited
