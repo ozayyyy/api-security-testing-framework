@@ -82,3 +82,114 @@ paths:
           description: OK
         '429':
           description: Rate limited
+  /vuln/orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price:
+                  type: integer
+                quantity:
+                  type: integer
+      responses:
+        '200':
+          description: Order in draft status
+  /vuln/orders/{order_id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order
+        '403':
+          description: Forbidden
+        '404':
+          description: Not found
+    patch:
+      operationId: updateOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price:
+                  type: integer
+                quantity:
+                  type: integer
+      responses:
+        '200':
+          description: Updated order
+        '409':
+          description: Order can only be changed while draft
+  /vuln/orders/{order_id}/pay:
+    post:
+      operationId: payOrder
+      responses:
+        '200':
+          description: Paid order
+        '409':
+          description: Invalid state transition
+  /vuln/orders/{order_id}/ship:
+    post:
+      operationId: shipOrder
+      responses:
+        '200':
+          description: Shipped order
+        '409':
+          description: Invalid state transition
+  /vuln/orders/{order_id}/cancel:
+    post:
+      operationId: cancelOrder
+      responses:
+        '200':
+          description: Cancelled order
+        '409':
+          description: Invalid state transition
+  /vuln/orders/{order_id}/refund:
+    post:
+      operationId: refundOrder
+      responses:
+        '200':
+          description: Refunded order
+        '409':
+          description: Invalid state transition
+  /vuln/profile/{user_id}:
+    get:
+      operationId: getProfile
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User profile
+        '403':
+          description: Forbidden
+  /vuln/auth/refresh:
+    post:
+      operationId: refreshToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Fresh token
+        '401':
+          description: Unauthorised

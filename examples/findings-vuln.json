@@ -1,0 +1,975 @@
+{
+  "findings": [
+    {
+      "detector": "bola",
+      "title": "BOLA: other user can read another user's object",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "other user (bob) received HTTP 200 with the same object body as owner alice for object 1. Object-level authorisation is not enforced.",
+      "endpoint": "/vuln/objects/{id}",
+      "reproduction": [
+        "1. As alice, GET /vuln/objects/1 -> 200 (control).",
+        "2. As other user, GET /vuln/objects/1 -> 200, identical body."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/objects/1",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "76",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"owner_id\": 1, \"title\": \"alice-note\", \"content\": \"alice private content\"}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/objects/1",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "76",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"owner_id\": 1, \"title\": \"alice-note\", \"content\": \"alice private content\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "bfla",
+      "title": "BFLA: low-privilege user can call admin endpoint /admin/users",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "Identity alice (role user) received 200 on /admin/users, which the admin control also returns 200 for. Function-level authorisation is not enforced.",
+      "endpoint": "/vuln/admin/users",
+      "reproduction": [
+        "1. As admin, GET /vuln/admin/users -> 200 (control).",
+        "2. As alice (user), GET /vuln/admin/users -> 200."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/admin/users",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "126",
+            "content-type": "application/json"
+          },
+          "response_body": "[{\"id\": 1, \"username\": \"alice\", \"role\": \"user\"}, {\"id\": 2, \"username\": \"bob\", \"role\": \"user\"}, {\"id\": 3, \"username\": \"admin\", \"role\": \"admin\"}]",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/admin/users",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "126",
+            "content-type": "application/json"
+          },
+          "response_body": "[{\"id\": 1, \"username\": \"alice\", \"role\": \"user\"}, {\"id\": 2, \"username\": \"bob\", \"role\": \"user\"}, {\"id\": 3, \"username\": \"admin\", \"role\": \"admin\"}]",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "jwt",
+      "title": "JWT alg=none token accepted",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "A token with header alg=none and no signature was accepted as alice. Signature verification is missing or bypassable.",
+      "endpoint": "/vuln/me",
+      "reproduction": [
+        "GET /me with Authorization: Bearer <alg=none token for victim> -> 200."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "41",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"user\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "jwt",
+      "title": "Tampered JWT payload accepted",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "A token whose payload was altered after signing (sub changed to alice) was accepted. The signature is not verified against the payload.",
+      "endpoint": "/vuln/me",
+      "reproduction": [
+        "Take a valid token, change sub in the payload, keep the original signature, GET /me -> 200."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "41",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"user\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "jwt",
+      "title": "Expired JWT accepted",
+      "severity": "medium",
+      "status": "suspected",
+      "confidence": "low",
+      "description": "A token with exp in the past was accepted. Expiry may not be enforced; confirm against server clock before treating as confirmed.",
+      "endpoint": "/vuln/me",
+      "reproduction": [],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "39",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 2, \"username\": \"bob\", \"role\": \"user\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "mass_assignment",
+      "title": "Mass assignment: role can be set through profile update",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "PATCH /vuln/users/me with {\"role\": 'admin'} persisted: a re-read shows role='admin'. A normal user can escalate their own privileges.",
+      "endpoint": "/vuln/users/me",
+      "reproduction": [
+        "1. GET /vuln/users/me as alice -> role='user'.",
+        "2. PATCH /vuln/users/me with {\"role\": 'admin'} -> 200.",
+        "3. GET /vuln/users/me -> role='admin'."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/users/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "130",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"user\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "PATCH",
+          "url": "http://127.0.0.1:8000/vuln/users/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "{\"role\": \"admin\"}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "131",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"admin\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/users/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "131",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"admin\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "excessive_data",
+      "title": "Excessive data exposure: sensitive fields in /users/1",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "GET /vuln/users/1 returned sensitive field(s) ['password_hash', 'ssn'] with values. These fields should never be sent to a client.",
+      "endpoint": "/vuln/users/1",
+      "reproduction": [
+        "GET /vuln/users/1 as alice -> 200, response contains ['password_hash', 'ssn']."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/users/1",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "131",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"admin\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "excessive_data",
+      "title": "Excessive data exposure: sensitive fields in /users/me",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "GET /vuln/users/me returned sensitive field(s) ['password_hash', 'ssn'] with values. These fields should never be sent to a client.",
+      "endpoint": "/vuln/users/me",
+      "reproduction": [
+        "GET /vuln/users/me as alice -> 200, response contains ['password_hash', 'ssn']."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/users/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "131",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"admin\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "rate_limit",
+      "title": "No rate limiting observed on /vuln/rate-test",
+      "severity": "medium",
+      "status": "confirmed",
+      "confidence": "medium",
+      "description": "20 rapid requests to /vuln/rate-test all returned 200/201 and none returned 429. The endpoint does not appear to enforce rate limiting (confirmed for this probe; a limit above the burst size would not be detected).",
+      "endpoint": "/vuln/rate-test",
+      "reproduction": [
+        "Send 20 rapid GET /vuln/rate-test requests as alice; all return 200, none 429."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/rate-test",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "11",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"ok\": true}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/rate-test",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "11",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"ok\": true}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/rate-test",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "11",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"ok\": true}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "business_logic",
+      "title": "Business logic: pay a cancelled order",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "A cancelled order can be paid: cancel returned 200, pay then returned 200 and a re-read shows status=paid. A cancelled order can be paid, so money can be taken for an order the customer cancelled.",
+      "endpoint": "/vuln/orders",
+      "reproduction": [
+        "1. POST /orders -> draft order.",
+        "2. POST /orders/{id}/cancel -> 200.",
+        "3. POST /orders/{id}/pay -> 200, re-read shows status=paid."
+      ],
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "{\"price\": 100, \"quantity\": 1}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "75",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 2, \"owner_id\": 1, \"status\": \"draft\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders/2/cancel",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "79",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 2, \"owner_id\": 1, \"status\": \"cancelled\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders/2/pay",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "74",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 2, \"owner_id\": 1, \"status\": \"paid\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/orders/2",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "74",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 2, \"owner_id\": 1, \"status\": \"paid\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "business_logic",
+      "title": "Business logic: refund the same order twice",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "The same order refunded twice: both refund calls returned 200 and a re-read shows refunds=2. The same order can be refunded twice, so the seller pays out twice for one purchase.",
+      "endpoint": "/vuln/orders",
+      "reproduction": [
+        "1. POST /orders, POST /orders/{id}/pay -> paid.",
+        "2. POST /orders/{id}/refund -> 200.",
+        "3. POST /orders/{id}/refund again -> 200, re-read shows refunds>=2."
+      ],
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "{\"price\": 100, \"quantity\": 1}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "75",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 3, \"owner_id\": 1, \"status\": \"draft\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders/3/pay",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "74",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 3, \"owner_id\": 1, \"status\": \"paid\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders/3/refund",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "78",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 3, \"owner_id\": 1, \"status\": \"refunded\", \"price\": 100, \"quantity\": 1, \"refunds\": 1}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders/3/refund",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "78",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 3, \"owner_id\": 1, \"status\": \"refunded\", \"price\": 100, \"quantity\": 1, \"refunds\": 2}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/orders/3",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "78",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 3, \"owner_id\": 1, \"status\": \"refunded\", \"price\": 100, \"quantity\": 1, \"refunds\": 2}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "business_logic",
+      "title": "Business logic: ship an unpaid order",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "A draft (unpaid) order can be shipped: ship returned 200 and a re-read shows status=shipped. An unpaid order can be shipped, so goods leave without payment.",
+      "endpoint": "/vuln/orders",
+      "reproduction": [
+        "1. POST /orders -> draft order.",
+        "2. POST /orders/{id}/ship -> 200, re-read shows status=shipped."
+      ],
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "{\"price\": 100, \"quantity\": 1}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "75",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 4, \"owner_id\": 1, \"status\": \"draft\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders/4/ship",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "77",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 4, \"owner_id\": 1, \"status\": \"shipped\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/orders/4",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "77",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 4, \"owner_id\": 1, \"status\": \"shipped\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "business_logic",
+      "title": "Business logic: change price/quantity after payment",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "Price/quantity can be changed after payment: PATCH returned 200 and a re-read shows price=999, quantity=99. Price or quantity can be changed after payment, so the amount charged and the amount shipped disagree.",
+      "endpoint": "/vuln/orders",
+      "reproduction": [
+        "1. POST /orders, POST /orders/{id}/pay -> paid.",
+        "2. PATCH /orders/{id} with price=999, quantity=99 -> 200.",
+        "3. GET /orders/{id} -> price=999 and/or quantity=99."
+      ],
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "{\"price\": 100, \"quantity\": 1}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "75",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 5, \"owner_id\": 1, \"status\": \"draft\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/orders/5/pay",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "74",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 5, \"owner_id\": 1, \"status\": \"paid\", \"price\": 100, \"quantity\": 1, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "PATCH",
+          "url": "http://127.0.0.1:8000/vuln/orders/5",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "{\"price\": 999, \"quantity\": 99}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "75",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 5, \"owner_id\": 1, \"status\": \"paid\", \"price\": 999, \"quantity\": 99, \"refunds\": 0}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/orders/5",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "75",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 5, \"owner_id\": 1, \"status\": \"paid\", \"price\": 999, \"quantity\": 99, \"refunds\": 0}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "inconsistent_authz",
+      "title": "Inconsistent authorisation: /vuln/users/1 allows what /vuln/profile/1 denies",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "For user 1, bob (not the owner) received 200 on /vuln/users/1 but 403 on /vuln/profile/1, while the owner is allowed on both. The same resource is protected on one path and not the other.",
+      "endpoint": "/vuln/users/1",
+      "reproduction": [
+        "1. As alice (owner), GET /vuln/users/1 -> 200 and GET /vuln/profile/1 -> 200 (control).",
+        "2. As bob, GET /vuln/users/1 -> 200, GET /vuln/profile/1 -> 403."
+      ],
+      "evidence": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/users/1",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "131",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"admin\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/profile/1",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "131",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"admin\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/users/1",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "131",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 1, \"username\": \"alice\", \"role\": \"admin\", \"email\": \"alice@example.test\", \"password_hash\": \"[REDACTED]\", \"ssn\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/profile/1",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 403,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "29",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"detail\": \"not your profile\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "session",
+      "title": "Revoked token still accepted",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "A token revoked via POST /_lab/revoke was still accepted on /vuln/me (200). Revocation is not enforced.",
+      "endpoint": "/vuln/me",
+      "reproduction": [
+        "1. POST /_lab/issue-jwt -> token.",
+        "2. POST /_lab/revoke with that token -> 200.",
+        "3. GET /vuln/me with the revoked token -> 200."
+      ],
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/_lab/issue-jwt",
+          "request_headers": {},
+          "request_body": "{\"sub\": \"bob\"}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "207",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"token\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/_lab/revoke",
+          "request_headers": {},
+          "request_body": "{\"token\": \"[REDACTED]\"}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "11",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"ok\": true}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "39",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 2, \"username\": \"bob\", \"role\": \"user\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "session",
+      "title": "Revoked token can be refreshed",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "A revoked token could be exchanged for a fresh token via /vuln/auth/refresh (200). Revocation is bypassed by refresh.",
+      "endpoint": "/vuln/auth/refresh",
+      "reproduction": [
+        "1. POST /_lab/issue-jwt -> token; POST /_lab/revoke with it -> 200.",
+        "2. POST /vuln/auth/refresh with the revoked token -> 200, new token returned."
+      ],
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/_lab/issue-jwt",
+          "request_headers": {},
+          "request_body": "{\"sub\": \"bob\"}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "207",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"token\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/_lab/revoke",
+          "request_headers": {},
+          "request_body": "{\"token\": \"[REDACTED]\"}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "11",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"ok\": true}",
+          "note": ""
+        },
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/vuln/auth/refresh",
+          "request_headers": {},
+          "request_body": "{\"token\": \"[REDACTED]\"}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "207",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"token\": \"[REDACTED]\"}",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "detector": "session",
+      "title": "Expired token still accepted",
+      "severity": "high",
+      "status": "confirmed",
+      "confidence": "high",
+      "description": "A properly signed token with exp one hour in the past was accepted on /vuln/me (200). Token expiry is not enforced.",
+      "endpoint": "/vuln/me",
+      "reproduction": [
+        "1. POST /_lab/issue-jwt with exp in the past -> token.",
+        "2. GET /vuln/me with that token -> 200."
+      ],
+      "evidence": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:8000/_lab/issue-jwt",
+          "request_headers": {},
+          "request_body": "{\"sub\": \"bob\", \"exp\": 1795474974}",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "207",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"token\": \"[REDACTED]\"}",
+          "note": ""
+        },
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:8000/vuln/me",
+          "request_headers": {
+            "Authorization": "[REDACTED]"
+          },
+          "request_body": "",
+          "response_status": 200,
+          "response_headers": {
+            "date": "Tue, 24 Nov 2026 00:02:53 GMT",
+            "server": "uvicorn",
+            "content-length": "39",
+            "content-type": "application/json"
+          },
+          "response_body": "{\"id\": 2, \"username\": \"bob\", \"role\": \"user\"}",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

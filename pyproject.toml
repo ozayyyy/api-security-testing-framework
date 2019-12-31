@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "apistf"
 version = "0.1.0"
-description = "Extensible framework for assessing REST APIs: authorisation, authentication and business-logic weaknesses. Rule-based detection only, no AI/LLM."
+description = "Extensible framework for assessing REST APIs: authorisation, authentication and business-logic weaknesses. Rule-based detection only."
 requires-python = ">=3.10"
 dependencies = [
     "fastapi==0.115.6",

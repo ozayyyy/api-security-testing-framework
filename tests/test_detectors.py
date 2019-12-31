@@ -94,11 +94,15 @@ async def test_full_run_vuln_finds_all_detectors_secure_finds_none_confirmed():
         "mass_assignment": {"prefix": "/vuln"},
         "excessive_data": {"prefix": "/vuln"},
         "rate_limit": {"prefix": "/vuln"},
+        "business_logic": {"prefix": "/vuln"},
+        "inconsistent_authz": {"prefix": "/vuln"},
+        "session": {"prefix": "/vuln"},
     }
     findings, _ = await run_detectors(config, params=params, client=client)
     await client.aclose()
     detectors_hit = {f.detector for f in findings if f.status.value == "confirmed"}
-    assert detectors_hit == {"bola", "bfla", "jwt", "mass_assignment", "excessive_data", "rate_limit"}
+    assert detectors_hit == {"bola", "bfla", "jwt", "mass_assignment", "excessive_data",
+                             "rate_limit", "business_logic", "inconsistent_authz", "session"}
 
     # Mass assignment on /vuln promotes alice to admin in the shared lab
     # state, so reset before the secure run or the BFLA control is polluted.

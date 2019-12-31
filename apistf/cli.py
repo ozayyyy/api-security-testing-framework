@@ -13,7 +13,7 @@ from apistf.runner import run_detectors
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="apistf", description="API Security Testing Framework (rule-based, no AI/LLM)")
+    p = argparse.ArgumentParser(prog="apistf", description="API Security Testing Framework (rule-based)")
     p.add_argument("--target", default="http://127.0.0.1:8000", help="Base URL of the target API")
     p.add_argument("--spec", help="Path to an OpenAPI spec (JSON or YAML)")
     p.add_argument("--prefix", default="/vuln", help="Lab prefix: /vuln or /secure")
@@ -38,7 +38,8 @@ async def _run(args) -> int:
     names = [n.strip() for n in args.detectors.split(",") if n.strip()] or None
     # Per-detector params default to the lab layout; prefix is shared.
     params = {name: {"prefix": args.prefix} for name in
-              (names or ["bola", "bfla", "jwt", "mass_assignment", "excessive_data", "rate_limit"])}
+              (names or ["bola", "bfla", "jwt", "mass_assignment", "excessive_data",
+                         "rate_limit", "business_logic", "inconsistent_authz", "session"])}
     # JWT detector needs a valid token to tamper with. Best-effort: ask
     # the lab's test-only issuer (absent on real targets, where the user
     # supplies a token instead). Failure here only weakens the JWT check.

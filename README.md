@@ -3,8 +3,7 @@
 Extensible framework for assessing REST APIs: authorisation,
 authentication and business-logic weaknesses.
 
-Detection is **rule-based and deterministic only — no AI/LLM** is used
-anywhere. Each detector is an explicit rule over observed
+Detection is **rule-based and deterministic only**. Each detector is an explicit rule over observed
 request/response pairs, and every finding carries the request/response
 evidence that produced it, a reproduction, and a confidence level.
 Findings are graded `confirmed` / `suspected` / `informational`.
@@ -22,6 +21,12 @@ Findings are graded `confirmed` / `suspected` / `informational`.
   - `mass_assignment` — privileged fields settable via profile update
   - `excessive_data` — sensitive fields returned in responses
   - `rate_limit` — burst probe for missing 429 enforcement
+  - `business_logic` — invalid order state transitions (pay-after-cancel, double refund, ship-unpaid, change after payment)
+  - `inconsistent_authz` — two paths to the same resource disagreeing on access
+  - `session` — revoked and expired tokens still accepted, refresh of revoked tokens
+- Detector documentation: `docs/detectors.md` (one section per detector, with rule, probes, expected behaviour and limitations).
+- Sample findings from a real run against the lab: `examples/findings-vuln.json`, `examples/findings-vuln.md`, `examples/findings-vuln.html` and the secure equivalents (`examples/findings-secure.*`, 0 findings). All evidence in them is redacted.
+- Measured lab evaluation: `docs/EVALUATION.md`.
 - Safe mode: explicit target allowlist (localhost by default),
   request budget, rate limiting between requests, audit log, and
   redaction of credentials and sensitive response data in all
@@ -91,8 +96,15 @@ mode refuses any host not in `allowed_hosts` and stops at
   (default 20).
 - JWT checks observe acceptance/rejection; they do not brute-force
   secrets and cannot prove a strong token is unforgeable.
-- Business-logic tests beyond the detectors above are not yet
-  implemented (see `docs/ROADMAP.md`).
+- The session detector needs the lab's test-only token issuer
+  (`POST /_lab/issue-jwt`); on a target without it, it reports
+  inconclusive instead of a finding.
+- Business-logic coverage is the order workflow in the lab only;
+  other workflows need their own detector parameters.
+- The lab evaluation measures detection on the bundled lab only.
+  It is not a benchmark against other tools, and false-positive /
+  false-negative rates beyond the lab are not measured here
+  (see `docs/EVALUATION.md` and `docs/ROADMAP.md`).
 
 ## Tests
 
@@ -106,6 +118,7 @@ mode refuses any host not in `allowed_hosts` and stops at
 apistf/            framework (parser, client, detectors, reporting)
 lab/               deliberately vulnerable FastAPI lab + secure variants
 tests/             unit + integration tests against the lab
-examples/          OpenAPI spec for the lab
-docs/              roadmap / evaluation notes
+examples/          OpenAPI spec for the lab, sample findings
+docs/              detector docs, roadmap, evaluation notes
+.github/           CI (pytest on push/PR)
 ```

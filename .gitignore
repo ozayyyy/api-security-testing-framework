@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.egg-info/
 .pytest_cache/
-findings*.json
-findings*.md
-findings*.html
+/findings*.json
+/findings*.md
+/findings*.html
 audit.log
