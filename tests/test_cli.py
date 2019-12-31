@@ -17,3 +17,10 @@ def test_parser_overrides():
     assert args.prefix == "/secure"
     assert args.detectors == "bola,jwt"
     assert args.format == "md"
+
+
+def test_parser_graphql_schema():
+    args = build_parser().parse_args(
+        ["--graphql-schema", "examples/graphql-lab.graphql"])
+    assert args.graphql_schema == "examples/graphql-lab.graphql"
+    assert build_parser().parse_args([]).graphql_schema is None

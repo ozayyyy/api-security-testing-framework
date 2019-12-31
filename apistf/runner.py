@@ -6,6 +6,7 @@ from apistf.config import TargetConfig
 from apistf.detectors import REGISTRY
 from apistf.detectors.base import DetectorContext
 from apistf.findings import Finding
+from apistf.graphql import GraphQLSchema
 from apistf.openapi import OpenAPISpec
 
 
@@ -15,6 +16,7 @@ async def run_detectors(
     spec: OpenAPISpec | None = None,
     params: dict[str, dict] | None = None,
     client: SafeClient | None = None,
+    graphql_schema: GraphQLSchema | None = None,
 ) -> tuple[list[Finding], SafeClient]:
     names = detector_names or list(REGISTRY)
     own_client = client is None
@@ -26,6 +28,7 @@ async def run_detectors(
             ctx = DetectorContext(
                 client=client, config=config, spec=spec,
                 params=(params or {}).get(name, {}),
+                graphql_schema=graphql_schema,
             )
             findings.extend(await cls().run(ctx))
     finally:

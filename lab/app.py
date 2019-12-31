@@ -28,10 +28,22 @@ import hmac
 import json
 import time
 import uuid
+from pathlib import Path
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from apistf.graphql import parse_schema_text
+from lab.graphql_exec import execute_graphql
+
 SECRET = "lab-secret-only"
+
+# The GraphQL schema served at POST {prefix}/graphql (see
+# examples/graphql-lab.graphql, the same file the scanner takes with
+# --graphql-schema).
+GRAPHQL_SCHEMA = parse_schema_text(
+    (Path(__file__).resolve().parent.parent / "examples" / "graphql-lab.graphql")
+    .read_text(encoding="utf-8")
+)
 
 USERS_SEED = {
     1: {"id": 1, "username": "alice", "role": "user", "email": "alice@example.test",
@@ -45,10 +57,15 @@ OBJECTS_SEED = {
     1: {"id": 1, "owner_id": 1, "title": "alice-note", "content": "alice private content"},
     2: {"id": 2, "owner_id": 2, "title": "bob-note", "content": "bob private content"},
 }
+POSTS_SEED = {
+    1: {"id": 1, "author_id": 1, "title": "alice-post", "content": "alice post content"},
+    2: {"id": 2, "author_id": 2, "title": "bob-post", "content": "bob post content"},
+}
 OPAQUE_TOKENS = {"token-alice": 1, "token-bob": 2, "token-admin": 3}
 
 USERS: dict = copy.deepcopy(USERS_SEED)
 OBJECTS: dict = copy.deepcopy(OBJECTS_SEED)
+POSTS: dict = copy.deepcopy(POSTS_SEED)
 RATE_COUNTER = {"vuln": 0, "secure": 0}
 # Orders: id -> {id, owner_id, status, price, quantity, refunds}.
 # Status machine (intended): draft -> paid -> shipped, draft/paid ->
@@ -62,9 +79,10 @@ REVOKED_TOKENS: set = set()
 
 
 def reset_lab() -> None:
-    global USERS, OBJECTS
+    global USERS, OBJECTS, POSTS
     USERS = copy.deepcopy(USERS_SEED)
     OBJECTS = copy.deepcopy(OBJECTS_SEED)
+    POSTS = copy.deepcopy(POSTS_SEED)
     RATE_COUNTER.update({"vuln": 0, "secure": 0})
     ORDERS.clear()
     _NEXT_ORDER_ID[0] = 1
@@ -360,6 +378,21 @@ def _register(prefix: str, *, secure: bool):
         else:
             RATE_COUNTER["vuln"] += 1
         return {"ok": True}
+
+    @app.post(f"{prefix}/graphql", tags=[tag])
+    async def graphql_endpoint(request: Request, authorization: str | None = Header(default=None)):
+        """GraphQL endpoint (see lab/graphql_exec.py). /vuln leaves
+        introspection on and enforces no depth, batching or alias
+        limits; /secure disables introspection (error), caps depth
+        at 5 and aliases at 5, and rejects batched requests with 400."""
+        _user_from_token(authorization, secure=secure)
+        try:
+            body = await request.json()
+        except Exception:
+            return JSONResponse(status_code=400, content={"errors": [{"message": "request body must be valid JSON"}]})
+        status, payload = execute_graphql(body, secure=secure, schema=GRAPHQL_SCHEMA,
+                                          users=USERS, posts=POSTS)
+        return JSONResponse(status_code=status, content=payload)
 
 
 _register("/vuln", secure=False)

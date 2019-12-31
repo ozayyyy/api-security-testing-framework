@@ -52,7 +52,7 @@ class SafeClient:
         return full
 
     async def request(self, method: str, url: str, *, headers: dict | None = None,
-                      json_body: dict | None = None, content: str | None = None) -> tuple[httpx.Response, Evidence]:
+                      json_body: dict | list | None = None, content: str | None = None) -> tuple[httpx.Response, Evidence]:
         full_url = self._check_url(url)
         if self._count >= self.config.request_budget:
             raise BudgetExceededError(f"request budget exhausted ({self.config.request_budget})")

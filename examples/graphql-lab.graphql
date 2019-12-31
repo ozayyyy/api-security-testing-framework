@@ -1,0 +1,31 @@
+# GraphQL schema for the lab (examples/graphql-lab.graphql).
+#
+# Served at POST {prefix}/graphql under both /vuln and /secure. The
+# schema is the same on both variants; what differs is the server's
+# behaviour: /vuln leaves introspection on and enforces no depth,
+# batching or alias limits, while /secure disables introspection and
+# enforces all three limits. Pass this file to the scanner with
+# --graphql-schema examples/graphql-lab.graphql
+
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  role: String!
+  friends: [User!]!
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+  author: User!
+}
+
+type Query {
+  user(id: ID!): User
+  users: [User!]!
+  post(id: ID!): Post
+  posts: [Post!]!
+}

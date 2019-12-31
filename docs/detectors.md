@@ -217,3 +217,91 @@ localhost only, with synthetic data.
   It probes JWTs only, not opaque-token revocation, so that
   revoking a token cannot break the shared test identities used by
   other detectors in the same run.
+
+## graphql_introspection — schema disclosure via introspection
+
+- Rule: POST a standard introspection query (`{ __schema { types { name } } }`)
+  to `{prefix}/graphql`.
+- Confirmed: HTTP 200 with `data.__schema.types` a non-empty list — the
+  server hands out its full schema (every type, field and argument).
+- No finding: the response has no `data.__schema` (introspection
+  disabled or rejected).
+- Lab: `POST /graphql`. In `/vuln` introspection is answered in full;
+  in `/secure` it returns an `introspection is disabled` error.
+- False-positive risk: low — a returned schema is a direct observation.
+  Whether exposing it matters depends on the target: on an internal
+  API it may be intended; on a public API it hands an attacker the
+  full surface to probe.
+- False-negative risk: a server that answers introspection only for
+  authenticated callers with a different identity than the probe
+  identity is not covered; the detector uses the configured identity.
+- Limitation: the detector reports that introspection is on, not
+  what an attacker can do with the schema — that is the job of the
+  other GraphQL detectors and of manual review.
+
+## graphql_depth — missing query-depth limit
+
+- Rule: build a nested query from the schema (a root field, then the
+  same self-referential field again and again) and send it at depth
+  12. The control is the same shape at depth 2, which must return data.
+- Confirmed: the depth-12 query returns 200 with data and no errors
+  while the depth-2 control also returns data — the server enforces
+  no depth limit.
+- No finding: the deep query is rejected (errors, no data) while the
+  control works.
+- Informational: the control fails, no schema is available, or the
+  schema has no self-referential path to nest through.
+- Lab: `POST /graphql`, nesting `user { friends { friends ... } }`.
+  In `/vuln` any depth executes; in `/secure` depth above 5 is
+  rejected with an error. Depth counts every field level down to the
+  deepest leaf (a root field selecting scalars is depth 2).
+- False-positive risk: low — the deep query demonstrably executed.
+  A depth limit above 12 would not be detected.
+- False-negative risk: a server that limits depth only for some
+  operations, or that limits by a different measure (for example,
+  counting only object fields), may pass this probe while still
+  allowing expensive queries.
+- Limitation: needs a schema (supplied with `--graphql-schema`, or
+  fetched by introspection when introspection is on). Without a
+  schema the detector reports inconclusive instead of a finding.
+
+## graphql_batching — missing batch limit
+
+- Rule: send one request whose body is a JSON array of 10 copies of
+  a minimal query. The control is the same query sent on its own,
+  which must return data.
+- Confirmed: the response is a list of 10 data-bearing results — the
+  server executes a whole batch in one request.
+- No finding: the batch is rejected (400 or errors) while the single
+  query works.
+- Informational: the control fails or no schema is available.
+- Lab: `POST /graphql`. In `/vuln` a 10-query batch returns 10
+  results; in `/secure` the request is rejected with 400.
+- False-positive risk: low — 10 executed queries in one response is
+  a direct observation. A batch limit above 10 would not be detected.
+- False-negative risk: a server that allows batching only up to a
+  limit above the probe size, or that batches only for some
+  operations, is not caught.
+- Limitation: the probe batch is deliberately 10 queries; only run
+  it against a target you are authorised to test, within the request
+  budget.
+
+## graphql_alias_abuse — missing alias limit (field duplication)
+
+- Rule: send one query repeating the same root field under 20
+  different aliases (`a1: user(id: 1) { ... }`, ... `a20: ...`).
+  The control is the same field sent once, without aliases.
+- Confirmed: the response is 200 with data for all 20 aliases — the
+  server executes the same field 20 times in one request.
+- No finding: the aliased query is rejected (errors, no data) while
+  the control works.
+- Informational: the control fails or no schema is available.
+- Lab: `POST /graphql`. In `/vuln` all 20 aliases return data; in
+  `/secure` more than 5 aliases in one operation is rejected.
+- False-positive risk: low — data for all 20 aliases is observed,
+  not assumed. An alias limit above 20 would not be detected.
+- False-negative risk: a server that limits aliases only for some
+  fields, or that deduplicates identical aliased fields, is not caught.
+- Limitation: needs a schema, as with the depth detector. Alias
+  counting is per operation; aliases spread across a batch are a
+  batching concern, not this detector's.

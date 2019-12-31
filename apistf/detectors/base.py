@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from apistf.client import SafeClient
 from apistf.config import TargetConfig
 from apistf.findings import Finding
+from apistf.graphql import GraphQLSchema
 from apistf.openapi import OpenAPISpec
 
 
@@ -21,6 +22,7 @@ class DetectorContext:
     config: TargetConfig
     spec: OpenAPISpec | None = None
     params: dict = field(default_factory=dict)
+    graphql_schema: GraphQLSchema | None = None
 
 
 class Detector:

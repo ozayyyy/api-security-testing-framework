@@ -20,6 +20,25 @@ Wall time is the `time` measurement of the whole CLI invocation,
 including interpreter startup, against the lab on localhost. The
 pytest suite (18 tests, in-process) took 0.54 s on the same machine.
 
+## Measured CLI run — GraphQL detectors included
+
+Same command with `--graphql-schema examples/graphql-lab.graphql`
+added (REST detectors plus the 4 GraphQL detectors):
+
+| Variant | Findings | Confirmed | Suspected | Requests sent |
+| --- | --- | --- | --- | --- |
+| `/vuln` | 21 | 20 | 1 | 71 |
+| `/secure` | 0 | 0 | 0 | 73 |
+
+The 4 extra confirmed findings on `/vuln` are the GraphQL detectors
+(`graphql_introspection`, `graphql_depth`, `graphql_batching`,
+`graphql_alias_abuse`), one each; none fires on `/secure`. The
+GraphQL detectors send 7 requests per run (1 introspection probe,
+2 each for depth, batching and alias: a control plus the probe),
+because the schema is supplied and no introspection round-trip is
+needed. The pytest suite (44 tests, in-process) took 2.97 s on the
+same machine.
+
 ## Per-detector results (CLI run)
 
 | Detector | Confirmed on `/vuln` | Confirmed on `/secure` |

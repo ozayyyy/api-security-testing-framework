@@ -25,6 +25,7 @@ Endpoints exist under both `/vuln` (flawed) and `/secure` (fixed):
 - `GET /rate-test` — never rate-limited in `/vuln`, 429 after 5 requests in `/secure`
 - Orders (`POST /orders`, `GET/PATCH /orders/{id}`, `POST /orders/{id}/pay|ship|cancel|refund`) — draft -> paid -> shipped, cancel from draft/paid, one refund from paid/shipped. `/vuln` allows pay-after-cancel, double refund, ship-unpaid and price/quantity changes after payment; `/secure` rejects all of them with 409
 - `POST /auth/refresh` — `/vuln` refreshes any JWT-shaped token including revoked/expired ones, `/secure` requires a valid, unexpired, unrevoked token
+- `POST /graphql` — GraphQL endpoint (schema: `examples/graphql-lab.graphql`): `/vuln` answers introspection in full and enforces no depth, batching or alias limits; `/secure` disables introspection, caps query depth at 5 and aliases at 5 per operation, and rejects batched requests with 400
 
 `POST /_lab/reset` restores seeded users/objects, orders and rate counters, and clears revocations.
 `POST /_lab/issue-jwt` issues a signed JWT (optional `exp`); `POST /_lab/revoke` revokes a token string (`/secure` rejects it afterwards, `/vuln` ignores revocation).
