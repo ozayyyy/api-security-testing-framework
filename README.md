@@ -35,6 +35,8 @@ Findings are graded `confirmed` / `suspected` / `informational`.
 
 ## Setup
 
+Requires Python 3.10 or later.
+
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
