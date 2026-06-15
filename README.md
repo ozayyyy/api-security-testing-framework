@@ -24,6 +24,14 @@ Findings are graded `confirmed` / `suspected` / `informational`.
   - `business_logic` — invalid order state transitions (pay-after-cancel, double refund, ship-unpaid, change after payment)
   - `inconsistent_authz` — two paths to the same resource disagreeing on access
   - `session` — revoked and expired tokens still accepted, refresh of revoked tokens
+- GraphQL detectors (need a schema: `--graphql-schema`, SDL or
+  introspection JSON; see `examples/graphql-lab.graphql`):
+  - `graphql_introspection` — introspection query returns the full schema
+  - `graphql_depth` — deeply nested query (depth 12) executes with no limit
+  - `graphql_batching` — 10 queries in one request all execute
+  - `graphql_alias_abuse` — one query repeating a field under 20 aliases all execute
+  Without a supplied schema the depth/batching/alias detectors fetch it
+  by introspection when introspection is on, and report inconclusive otherwise.
 - Detector documentation: `docs/detectors.md` (one section per detector, with rule, probes, expected behaviour and limitations).
 - Sample findings from a real run against the lab: `examples/findings-vuln.json`, `examples/findings-vuln.md`, `examples/findings-vuln.html` and the secure equivalents (`examples/findings-secure.*`, 0 findings). All evidence in them is redacted.
 - Measured lab evaluation: `docs/EVALUATION.md`.
@@ -55,6 +63,11 @@ python3 -m venv .venv
 # Scan the secure variant (expect no confirmed findings)
 .venv/bin/apistf --target http://127.0.0.1:8000 --prefix /secure \
   --report findings-secure.json
+
+# Scan the GraphQL endpoint too (needs the schema; adds 4 detectors)
+.venv/bin/apistf --target http://127.0.0.1:8000 --prefix /vuln \
+  --spec examples/openapi-lab.yaml --graphql-schema examples/graphql-lab.graphql \
+  --report findings-graphql.json
 ```
 
 Or run detectors in Python:
